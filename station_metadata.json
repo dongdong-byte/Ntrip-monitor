@@ -1,0 +1,590 @@
+{
+  "ANHN": {
+    "station_name": "안흥 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "BHAO": {
+    "station_name": "보현",
+    "agency": "한국천문연구원"
+  },
+  "BOEN": {
+    "station_name": "보은",
+    "agency": "국토지리정보원"
+  },
+  "BONH": {
+    "station_name": "봉화",
+    "agency": "국토지리정보원"
+  },
+  "BSNG": {
+    "station_name": "보성",
+    "agency": "국토지리정보원"
+  },
+  "CCHJ": {
+    "station_name": "충주 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "CCHN": {
+    "station_name": "춘천 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "CCSB": {
+    "station_name": "춘천신북",
+    "agency": "국토지리정보원"
+  },
+  "CHEN": {
+    "station_name": "천안",
+    "agency": "국토지리정보원"
+  },
+  "CHJU": {
+    "station_name": "제주",
+    "agency": "국토지리정보원"
+  },
+  "CHLW": {
+    "station_name": "철원",
+    "agency": "국토지리정보원"
+  },
+  "CHNG": {
+    "station_name": "창녕",
+    "agency": "국토지리정보원"
+  },
+  "CHSG": {
+    "station_name": "청송",
+    "agency": "국토지리정보원"
+  },
+  "CHUL": {
+    "station_name": "철원",
+    "agency": "국토지리정보원"
+  },
+  "CHWN": {
+    "station_name": "창원",
+    "agency": "국토지리정보원"
+  },
+  "CHYG": {
+    "station_name": "청양",
+    "agency": "국토지리정보원"
+  },
+  "CJDO": {
+    "station_name": "추자도",
+    "agency": "국토지리정보원"
+  },
+  "CNJU": {
+    "station_name": "청주",
+    "agency": "국토지리정보원"
+  },
+  "DAEJ": {
+    "station_name": "대전",
+    "agency": "한국천문연구원"
+  },
+  "DAMY": {
+    "station_name": "담양",
+    "agency": "국토지리정보원"
+  },
+  "DANG": {
+    "station_name": "당사도 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "DANJ": {
+    "station_name": "당진",
+    "agency": "국토지리정보원"
+  },
+  "DBON": {
+    "station_name": "도봉",
+    "agency": "서울시"
+  },
+  "DOKD": {
+    "station_name": "독도 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "DOND": {
+    "station_name": "동두천",
+    "agency": "국토지리정보원"
+  },
+  "DONH": {
+    "station_name": "동해",
+    "agency": "국토지리정보원"
+  },
+  "DONM": {
+    "station_name": "돈너미(충주) 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "EOCH": {
+    "station_name": "어청도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "GAGE": {
+    "station_name": "가거도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "GANH": {
+    "station_name": "강화",
+    "agency": "국토지리정보원"
+  },
+  "GANS": {
+    "station_name": "강서",
+    "agency": "서울시"
+  },
+  "GASA": {
+    "station_name": "가사도 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "GEOM": {
+    "station_name": "거문도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "GHDG": {
+    "station_name": "김해대감",
+    "agency": "국토지리정보원"
+  },
+  "GIJN": {
+    "station_name": "기장",
+    "agency": "공간정보연구원"
+  },
+  "GMDO": {
+    "station_name": "거문도",
+    "agency": "국토지리정보원"
+  },
+  "GNGJ": {
+    "station_name": "강릉구정",
+    "agency": "국토지리정보원"
+  },
+  "GOCH": {
+    "station_name": "거창",
+    "agency": "국토지리정보원"
+  },
+  "GOES": {
+    "station_name": "괴산",
+    "agency": "공간정보연구원"
+  },
+  "GOHG": {
+    "station_name": "고흥",
+    "agency": "국토지리정보원"
+  },
+  "GOHN": {
+    "station_name": "고흥",
+    "agency": "공간정보연구원"
+  },
+  "GOSG": {
+    "station_name": "고성",
+    "agency": "국토지리정보원"
+  },
+  "GSAN": {
+    "station_name": "괴산",
+    "agency": "국토지리정보원"
+  },
+  "GUMC": {
+    "station_name": "금천",
+    "agency": "서울시"
+  },
+  "GYJU": {
+    "station_name": "경주",
+    "agency": "국토지리정보원"
+  },
+  "GYOI": {
+    "station_name": "경주외동",
+    "agency": "국토지리정보원"
+  },
+  "HADG": {
+    "station_name": "하동",
+    "agency": "국토지리정보원"
+  },
+  "HCHN": {
+    "station_name": "화천",
+    "agency": "국토지리정보원"
+  },
+  "HCSN": {
+    "station_name": "화천사내",
+    "agency": "국토지리정보원"
+  },
+  "HGDO": {
+    "station_name": "홍도 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "HOMI": {
+    "station_name": "호미곶 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "HONC": {
+    "station_name": "홍천",
+    "agency": "국토지리정보원"
+  },
+  "HONG": {
+    "station_name": "홍천 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "HSNG": {
+    "station_name": "화성",
+    "agency": "공간정보연구원"
+  },
+  "ICHN": {
+    "station_name": "이천",
+    "agency": "국토지리정보원"
+  },
+  "ICOR": {
+    "station_name": "인천옥련",
+    "agency": "국토지리정보원"
+  },
+  "IMJA": {
+    "station_name": "임자",
+    "agency": "국토지리정보원"
+  },
+  "INCH": {
+    "station_name": "인천",
+    "agency": "국토지리정보원"
+  },
+  "INJE": {
+    "station_name": "인제",
+    "agency": "국토지리정보원"
+  },
+  "JAHG": {
+    "station_name": "장흥",
+    "agency": "국토지리정보원"
+  },
+  "JANS": {
+    "station_name": "장수",
+    "agency": "국토지리정보원"
+  },
+  "JECH": {
+    "station_name": "제천",
+    "agency": "국토지리정보원"
+  },
+  "JEJU": {
+    "station_name": "제주",
+    "agency": "한국천문연구원"
+  },
+  "JEOJ": {
+    "station_name": "저진 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "JIND": {
+    "station_name": "진도",
+    "agency": "국토지리정보원"
+  },
+  "JJNG": {
+    "station_name": "진주남강",
+    "agency": "국토지리정보원"
+  },
+  "JSUN": {
+    "station_name": "정선",
+    "agency": "국토지리정보원"
+  },
+  "JUKB": {
+    "station_name": "죽변 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "JUMN": {
+    "station_name": "주문진 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "JUNG": {
+    "station_name": "정읍",
+    "agency": "국토지리정보원"
+  },
+  "JUNJ": {
+    "station_name": "전주",
+    "agency": "국토지리정보원"
+  },
+  "KAWH": {
+    "station_name": "강화",
+    "agency": "공간정보연구원"
+  },
+  "KIMC": {
+    "station_name": "김천",
+    "agency": "국토지리정보원"
+  },
+  "KUNW": {
+    "station_name": "군위",
+    "agency": "국토지리정보원"
+  },
+  "KUSN": {
+    "station_name": "군산",
+    "agency": "국토지리정보원"
+  },
+  "KWNJ": {
+    "station_name": "광주",
+    "agency": "국토지리정보원"
+  },
+  "MARA": {
+    "station_name": "마라도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "MKPO": {
+    "station_name": "목포",
+    "agency": "한국천문연구원"
+  },
+  "MLDO": {
+    "station_name": "말도 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "MLYN": {
+    "station_name": "밀양",
+    "agency": "한국천문연구원"
+  },
+  "MOOJ": {
+    "station_name": "무주 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "MUAN": {
+    "station_name": "무안",
+    "agency": "국토지리정보원"
+  },
+  "MUJU": {
+    "station_name": "무주",
+    "agency": "국토지리정보원"
+  },
+  "MUNG": {
+    "station_name": "문경 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "MYSO": {
+    "station_name": "밀양산외",
+    "agency": "국토지리정보원"
+  },
+  "NAMH": {
+    "station_name": "남해",
+    "agency": "국토지리정보원"
+  },
+  "NAMW": {
+    "station_name": "남원",
+    "agency": "국토지리정보원"
+  },
+  "NAMY": {
+    "station_name": "남양주",
+    "agency": "국토지리정보원"
+  },
+  "NSAN": {
+    "station_name": "논산",
+    "agency": "국토지리정보원"
+  },
+  "OJBU": {
+    "station_name": "의정부",
+    "agency": "국토지리정보원"
+  },
+  "OKCH": {
+    "station_name": "옥천감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "PAJU": {
+    "station_name": "파주",
+    "agency": "국토지리정보원"
+  },
+  "PALM": {
+    "station_name": "팔미도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "PCHN": {
+    "station_name": "평창",
+    "agency": "국토지리정보원"
+  },
+  "PJMS": {
+    "station_name": "파주문산",
+    "agency": "국토지리정보원"
+  },
+  "PNCH": {
+    "station_name": "평창",
+    "agency": "공간정보연구원"
+  },
+  "POCN": {
+    "station_name": "포천",
+    "agency": "국토지리정보원"
+  },
+  "POHN": {
+    "station_name": "포항",
+    "agency": "국토지리정보원"
+  },
+  "PSJA": {
+    "station_name": "부산장안",
+    "agency": "국토지리정보원"
+  },
+  "PUSN": {
+    "station_name": "부산",
+    "agency": "국토지리정보원"
+  },
+  "PYCH": {
+    "station_name": "평창 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "SAMC": {
+    "station_name": "삼척 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "SEJN": {
+    "station_name": "세종",
+    "agency": "국토지리정보원"
+  },
+  "SEJU": {
+    "station_name": "성주 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "SEOI": {
+    "station_name": "서이말 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "SEOS": {
+    "station_name": "서산",
+    "agency": "국토지리정보원"
+  },
+  "SIAN": {
+    "station_name": "신안",
+    "agency": "국토지리정보원"
+  },
+  "SKCH": {
+    "station_name": "속초",
+    "agency": "한국천문연구원"
+  },
+  "SKMA": {
+    "station_name": "서울",
+    "agency": "한국천문연구원"
+  },
+  "SMAN": {
+    "station_name": "새만금",
+    "agency": "국토지리정보원"
+  },
+  "SNJU": {
+    "station_name": "상주",
+    "agency": "국토지리정보원"
+  },
+  "SOCH": {
+    "station_name": "소청도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "SOKC": {
+    "station_name": "속초 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "SONC": {
+    "station_name": "순천",
+    "agency": "국토지리정보원"
+  },
+  "SONP": {
+    "station_name": "송파",
+    "agency": "서울시"
+  },
+  "SORI": {
+    "station_name": "소리도 감시국",
+    "agency": "국립해양측위정보원"
+  },
+  "SOUL": {
+    "station_name": "서울",
+    "agency": "국토지리정보원"
+  },
+  "SSAN": {
+    "station_name": "성산",
+    "agency": "국토지리정보원"
+  },
+  "SUNJ": {
+    "station_name": "성주",
+    "agency": "국토지리정보원"
+  },
+  "SUWN": {
+    "station_name": "수원",
+    "agency": "국토지리정보원"
+  },
+  "SWGS": {
+    "station_name": "수원고색",
+    "agency": "국토지리정보원"
+  },
+  "TABK": {
+    "station_name": "태백",
+    "agency": "국토지리정보원"
+  },
+  "TEGN": {
+    "station_name": "대구",
+    "agency": "국토지리정보원"
+  },
+  "ULDO": {
+    "station_name": "울릉도",
+    "agency": "국토지리정보원"
+  },
+  "ULLE": {
+    "station_name": "울릉도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "WNDO": {
+    "station_name": "완도",
+    "agency": "국토지리정보원"
+  },
+  "WNJU": {
+    "station_name": "원주",
+    "agency": "국토지리정보원"
+  },
+  "WOLS": {
+    "station_name": "울산",
+    "agency": "국토지리정보원"
+  },
+  "WSJG": {
+    "station_name": "울산중구",
+    "agency": "국토지리정보원"
+  },
+  "WSSN": {
+    "station_name": "울산삼남",
+    "agency": "국토지리정보원"
+  },
+  "WULJ": {
+    "station_name": "울진",
+    "agency": "국토지리정보원"
+  },
+  "YANJ": {
+    "station_name": "양주",
+    "agency": "국토지리정보원"
+  },
+  "YANP": {
+    "station_name": "양평",
+    "agency": "국토지리정보원"
+  },
+  "YCHG": {
+    "station_name": "영천호국",
+    "agency": "국토지리정보원"
+  },
+  "YCIG": {
+    "station_name": "영천임고",
+    "agency": "국토지리정보원"
+  },
+  "YCMP": {
+    "station_name": "영천",
+    "agency": "국토지리정보원"
+  },
+  "YDKG": {
+    "station_name": "영덕강구",
+    "agency": "국토지리정보원"
+  },
+  "YEOJ": {
+    "station_name": "서여주",
+    "agency": "국토지리정보원"
+  },
+  "YNDO": {
+    "station_name": "영도 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "YNGU": {
+    "station_name": "양구",
+    "agency": "국토지리정보원"
+  },
+  "YNJU": {
+    "station_name": "영주 기준국",
+    "agency": "국립해양측위정보원"
+  },
+  "YODK": {
+    "station_name": "영덕",
+    "agency": "국토지리정보원"
+  },
+  "YONJ": {
+    "station_name": "영주",
+    "agency": "공간정보연구원"
+  },
+  "YONK": {
+    "station_name": "영광",
+    "agency": "국토지리정보원"
+  },
+  "YONS": {
+    "station_name": "용산",
+    "agency": "서울시"
+  },
+  "YOWL": {
+    "station_name": "영월",
+    "agency": "국토지리정보원"
+  },
+  "YYAN": {
+    "station_name": "양양",
+    "agency": "국토지리정보원"
+  }
+}

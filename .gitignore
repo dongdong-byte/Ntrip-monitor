@@ -1,0 +1,15 @@
+# 비밀번호가 들어 있는 실제 설정 파일 (절대 커밋 금지)
+# 템플릿인 config.example.ini만 커밋한다.
+config.ini
+
+# 실행 결과물 (매시간 바뀌는 데이터)
+output/
+liveness.log
+cron.log
+
+# 파이썬 캐시
+__pycache__/
+*.pyc
+
+# 엑셀이 파일을 열어 둘 때 만드는 잠금 파일
+~$*
