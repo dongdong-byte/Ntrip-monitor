@@ -21,6 +21,16 @@
   python liveness_main.py --list-mounts
     → 마운트 목록만 확인 (검사·엑셀 저장·메일 없음)
 
+메일:
+  python liveness_main.py --mail
+    → 검사 후 요약 메일 1통 발송 (cron 운영 형태)
+      config.ini [smtp] 계정으로 네이버웍스(smtp.worksmobile.com:587, STARTTLS)에서 보냄
+      이번 결과 저장에 성공한 캐스터별 엑셀을 첨부
+      메일 발송에 실패하면 종료 코드 1
+
+  python liveness_main.py --mail-test
+    → 검사 없이 짧은 테스트 메일만 발송 (메일 설정 확인용)
+
 프로토콜 요청 변형:
   --protocol auto    → 캐스터가 실제로 답하는 버전을 1회 탐지해 고정 (기본값)
   --protocol v2      → NTRIP 2.0 정식 요청 (HTTP/1.1 + Ntrip-Version)
@@ -39,7 +49,8 @@
 장애 격리:
   한 캐스터의 검사나 엑셀 저장이 실패해도 나머지 캐스터는 계속 검사한다.
   검사 결과는 엑셀 저장 성공 여부와 별도로 보존한다.
-  검사 불가 또는 엑셀 저장 실패가 하나라도 있으면 종료 코드 1로 끝난다.
+  검사 불가, 엑셀 저장 실패, 메일 발송 실패가 하나라도 있으면 종료 코드 1로 끝난다.
+  실패한 캐스터가 있어도 메일은 보내며, 메일 맨 위 "확인 필요"에 표시한다.
 
 계정:
   config.ini의 [caster:이름] 섹션에서 읽는다. (config.example.ini 참고)
@@ -47,7 +58,6 @@
 """
 
 import logging
-import os
 import sys
 import time
 from dataclasses import dataclass, field
@@ -57,7 +67,7 @@ from typing import Dict, List, Optional, Tuple
 
 import metadata_store
 import mount_cache
-from config_loader import CasterConfig, ConfigError, load_config
+from config_loader import CasterConfig, ConfigError, SmtpConfig, load_config
 from liveness_checker import MountResult, NtripLivenessChecker
 from liveness_excel_writer import LivenessExcelWriter
 from liveness_mailer import LivenessMailer
@@ -98,16 +108,8 @@ LIVENESS_CONFIG = {
     # 캐스터별 누적 엑셀 파일명
     "OUTPUT_FILE_TEMPLATE": "생존현황_{caster}.xlsx",
 
-    # ── 메일 설정 (--mail 플래그가 있을 때만 발송) ──
-    # E단계에서 config.ini [smtp]와 네이버웍스 고정값으로 바뀐다.
-    "SMTP_HOST": "",
-    "SMTP_PORT": 587,
-    "SMTP_SSL": False,               # 465 포트면 True, 587이면 False(STARTTLS)
-    "SMTP_USER": "",                 # 환경변수 SMTP_USER 권장
-    "SMTP_PASS": "",                 # 환경변수 SMTP_PASS 권장
-    "MAIL_FROM": "",                 # 보내는 주소 (보통 SMTP_USER와 동일)
-    "MAIL_TO": [],                   # 수신자 목록 예: ["office@company.co.kr"]
-    "MAIL_ATTACH_EXCEL": False,      # True면 누적 엑셀 파일 첨부
+    # 메일: 계정·수신자는 config.ini [smtp], 서버는 config_loader의 고정값
+    # (smtp.worksmobile.com:587, STARTTLS). 엑셀은 항상 첨부한다.
 }
 
 SOURCE_SOURCETABLE = "Sourcetable"
@@ -125,6 +127,7 @@ class Options:
     mount_source: Optional[str] = None
     protocol_mode: Optional[str] = None
     send_mail: bool = False
+    test_mail: bool = False
     list_only: bool = False
     casters: List[str] = field(default_factory=list)
     filters: List[str] = field(default_factory=list)
@@ -190,35 +193,9 @@ def build_writer(caster_name: str, station_metadata: dict) -> LivenessExcelWrite
     )
 
 
-def build_mailer() -> Optional[LivenessMailer]:
-    """메일 설정이 완성돼 있을 때만 Mailer를 생성합니다. (E단계에서 교체)"""
-    smtp_host = LIVENESS_CONFIG["SMTP_HOST"].strip()
-    smtp_user = os.environ.get("SMTP_USER", LIVENESS_CONFIG["SMTP_USER"]).strip()
-    smtp_pass = os.environ.get("SMTP_PASS", LIVENESS_CONFIG["SMTP_PASS"])
-    sender = LIVENESS_CONFIG["MAIL_FROM"].strip() or smtp_user
-    recipients = LIVENESS_CONFIG["MAIL_TO"]
-
-    missing = []
-    if not smtp_host:
-        missing.append("SMTP_HOST")
-    if not smtp_user:
-        missing.append("SMTP_USER")
-    if not recipients:
-        missing.append("MAIL_TO")
-
-    if missing:
-        logger.error(f"메일 설정 누락: {', '.join(missing)} → 발송 생략")
-        return None
-
-    return LivenessMailer(
-        smtp_host=smtp_host,
-        smtp_port=LIVENESS_CONFIG["SMTP_PORT"],
-        username=smtp_user,
-        password=smtp_pass,
-        sender=sender,
-        recipients=recipients,
-        use_ssl=LIVENESS_CONFIG["SMTP_SSL"],
-    )
+def build_mailer(smtp: SmtpConfig) -> LivenessMailer:
+    """config.ini [smtp] 설정으로 Mailer를 생성합니다. (설정 검증은 config_loader가 함)"""
+    return LivenessMailer(smtp)
 
 
 # ─────────────────────────────────────────────
@@ -444,16 +421,16 @@ def log_run_summary(outcomes: List[CasterOutcome]) -> None:
             logger.info(line)
 
 
-def send_mail(outcomes: List[CasterOutcome]) -> None:
-    """임시: 캐스터별로 기존 메일 형식을 보낸다. E단계에서 1통 통합으로 교체."""
-    mailer = build_mailer()
-    if not mailer:
-        return
-    for o in outcomes:
-        if not o.results:
-            continue
-        attach = o.excel_path if LIVENESS_CONFIG["MAIL_ATTACH_EXCEL"] else None
-        mailer.send(o.results, o.check_time, attach_path=attach)
+def send_mail(outcomes: List[CasterOutcome], smtp: SmtpConfig, run_time: str) -> bool:
+    """모든 캐스터 결과를 메일 1통으로 보낸다. 반환: 발송 성공 여부.
+
+    검사에 실패한 캐스터가 있어도 보낸다. 실패 내용은 메일의 "확인 필요"에 표시된다.
+    """
+    return build_mailer(smtp).send_report(outcomes, run_time)
+
+
+def now_text() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
 def list_mounts(casters: List[CasterConfig], options: Options) -> bool:
@@ -496,6 +473,11 @@ def parse_arguments(args: list) -> Options:
 
         if arg == "--mail":
             options.send_mail = True
+            index += 1
+            continue
+
+        if arg == "--mail-test":
+            options.test_mail = True
             index += 1
             continue
 
@@ -562,6 +544,12 @@ def main() -> None:
         logger.error(str(exc))
         raise SystemExit(1)
 
+    if options.test_mail:
+        # 검사 없이 메일 설정만 확인한다.
+        if not build_mailer(config.smtp).send_test(now_text()):
+            raise SystemExit(1)
+        return
+
     logger.info(f"대상 캐스터 {len(casters)}개: {', '.join(c.name for c in casters)}")
 
     if options.list_only:
@@ -570,10 +558,12 @@ def main() -> None:
         return
 
     def run_cycle() -> bool:
+        run_time = now_text()
         outcomes = run_all(casters, options)
+        mail_ok = True
         if options.send_mail:
-            send_mail(outcomes)
-        return all(o.ok for o in outcomes)
+            mail_ok = send_mail(outcomes, config.smtp, run_time)
+        return all(o.ok for o in outcomes) and mail_ok
 
     if options.loop_interval is None:
         if not run_cycle():
