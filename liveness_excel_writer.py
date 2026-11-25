@@ -28,6 +28,7 @@
 import logging
 import os
 import re
+import tempfile
 from collections import defaultdict
 from typing import Optional
 
@@ -154,7 +155,19 @@ class LivenessExcelWriter:
 
         self._remove_default_sheet(wb)
         self._move_format_sheets_to_front(wb)
-        wb.save(self.output_path)
+        # 저장 도중 실패해도 기존 누적 이력을 손상시키지 않는다.
+        tmp_path = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                dir=self.output_dir, prefix=".liveness-", suffix=".xlsx", delete=False
+            ) as tmp:
+                tmp_path = tmp.name
+            wb.save(tmp_path)
+            os.replace(tmp_path, self.output_path)
+        finally:
+            wb.close()
+            if tmp_path and os.path.exists(tmp_path):
+                os.remove(tmp_path)
 
         alive = sum(1 for result in results.values() if result.status == "양호")
         logger.info(

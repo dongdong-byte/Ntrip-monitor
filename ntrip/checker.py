@@ -350,10 +350,12 @@ class NtripLivenessChecker:
             logger.error(
                 "→ 401 감지: config.ini의 캐스터 user / password를 확인하세요."
             )
-        if 503 in codes:
-            logger.error(
-                "→ 503 감지: 캐스터 과부하 또는 동시 접속 제한일 수 있습니다. "
-                "MAX_WORKERS를 낮춰 재시도해 보세요."
+        count_503 = sum(1 for r in results.values() if r.http_status == 503)
+        if count_503:
+            logger.warning(
+                f"→ 503 {count_503}건은 무데이터로 기록했습니다. "
+                "gnssdata는 기준국 데이터가 캐스터에 없을 때 본문 없는 503을 반환합니다. "
+                "재시도하지 않습니다."
             )
         if 501 in codes:
             logger.error(

@@ -177,12 +177,15 @@ class FetcherOrderTests(unittest.TestCase):
 class MountCacheTests(unittest.TestCase):
     def test_list_command_fails_when_no_mounts_available(self):
         import liveness_main
+        from config_loader import CasterConfig
 
-        config = mock.Mock(casters=[mock.Mock(name="caster")])
+        caster = CasterConfig(name="gnssdata", host="caster.example", port=2101,
+                              user="u", password="p")
+        config = mock.Mock(casters=[caster])
         with mock.patch.object(liveness_main, "setup_logging"), mock.patch.object(
             liveness_main, "load_config", return_value=config
         ), mock.patch.object(liveness_main, "build_checker"), mock.patch.object(
-            liveness_main, "resolve_mounts", return_value=[]
+            liveness_main, "resolve_mounts", return_value=([], "")
         ), mock.patch("sys.argv", ["liveness_main.py", "--list-mounts", "--source", "caster"]):
             with self.assertRaises(SystemExit) as caught:
                 liveness_main.main()
@@ -244,8 +247,11 @@ class MountCacheTests(unittest.TestCase):
         with mock.patch.object(fetcher, "_raw_request", return_value=v1_response()[:-10]), mock.patch.dict(
             LIVENESS_CONFIG, {"MOUNTS_DIR": str(self.path.parent)}
         ):
-            self.assertEqual(resolve_mounts(checker, "gnssdata", "auto"), ["Original-RTCM32"])
-            self.assertEqual(resolve_mounts(checker, "gnssdata", "caster"), [])
+            self.assertEqual(
+                resolve_mounts(checker, "gnssdata", "auto"),
+                (["Original-RTCM32"], "보조 목록"),
+            )
+            self.assertEqual(resolve_mounts(checker, "gnssdata", "caster"), ([], ""))
         self.assertEqual(self.path.read_bytes(), before)
 
 

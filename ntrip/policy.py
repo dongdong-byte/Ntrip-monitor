@@ -19,8 +19,10 @@ from .models import (
     ProbeResult,
 )
 
-# 일시적 장애일 수 있어 재시도 가치가 있는 HTTP 코드
-RETRYABLE_HTTP_CODES = (500, 502, 503, 504)
+# 일시적 장애일 수 있어 재시도 가치가 있는 HTTP 코드.
+# 503은 빼 둔다. gnssdata는 기준국 데이터가 없을 때 본문 없는 503을 주며,
+# 같은 마운트를 다시 붙여도 결과가 같기 때문이다.
+RETRYABLE_HTTP_CODES = (500, 502, 504)
 
 # HTTP 코드별 사람이 읽는 설명 (민원 대응 매뉴얼과 대응)
 HTTP_CODE_MEANING = {
@@ -28,7 +30,7 @@ HTTP_CODE_MEANING = {
     404: "마운트포인트 없음",
     500: "캐스터 내부 오류",
     501: "요청 기능 미지원",
-    503: "서비스 불가 (과부하/접속제한)",
+    503: "기준국 데이터 없음",
 }
 
 
@@ -57,6 +59,11 @@ def decide_response(
 
     if code == 200:
         return None  # body를 봐야 안다
+
+    # gnssdata는 목록에는 있으나 기준국 스트림이 없을 때 본문 없는 503을 준다.
+    # GNSS-Surfer에서도 0바이트(too_few_Bytes)로 보인다. 재시도하지 않는다.
+    if code == 503:
+        return STATUS_NO_DATA, describe_code(code), False
 
     retryable = code in RETRYABLE_HTTP_CODES if code else False
     return STATUS_ERROR, describe_code(code), retryable
