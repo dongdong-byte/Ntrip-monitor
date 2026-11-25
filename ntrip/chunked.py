@@ -11,6 +11,7 @@ _STATE_SIZE = 0   # 청크 크기 줄을 읽는 중
 _STATE_DATA = 1   # 청크 본문을 읽는 중
 _STATE_CRLF = 2   # 청크 본문 뒤 CRLF를 건너뛰는 중
 _STATE_DONE = 3   # 종료(0 크기 청크) 또는 파싱 불가
+_STATE_TRAILER = 4  # 마지막 청크 뒤 trailer와 빈 줄
 
 # 크기 줄이 이 길이를 넘으면 chunked가 아니라고 보고 중단
 _MAX_SIZE_LINE = 64
@@ -46,6 +47,12 @@ class ChunkedDecoder:
                 line = bytes(self._buf[:index]).split(b";", 1)[0].strip()
                 del self._buf[: index + 2]
 
+                if index > _MAX_SIZE_LINE or not line or any(
+                    char not in b"0123456789abcdefABCDEF" for char in line
+                ):
+                    self._fail()
+                    break
+
                 try:
                     size = int(line, 16)
                 except ValueError:
@@ -53,9 +60,8 @@ class ChunkedDecoder:
                     break
 
                 if size == 0:
-                    self._state = _STATE_DONE
-                    self.finished = True
-                    break
+                    self._state = _STATE_TRAILER
+                    continue
 
                 self._remaining = size
                 self._state = _STATE_DATA
@@ -73,8 +79,25 @@ class ChunkedDecoder:
             elif self._state == _STATE_CRLF:
                 if len(self._buf) < 2:
                     break
+                if self._buf[:2] != b"\r\n":
+                    self._fail()
+                    break
                 del self._buf[:2]
                 self._state = _STATE_SIZE
+
+            elif self._state == _STATE_TRAILER:
+                index = self._buf.find(b"\r\n")
+                if index == -1:
+                    break
+                line = bytes(self._buf[:index])
+                del self._buf[:index + 2]
+                if not line:
+                    self._state = _STATE_DONE
+                    self.finished = True
+                    break
+                if b":" not in line:
+                    self._fail()
+                    break
 
             else:  # _STATE_DONE
                 break

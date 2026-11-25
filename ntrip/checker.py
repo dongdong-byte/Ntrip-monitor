@@ -348,8 +348,7 @@ class NtripLivenessChecker:
         }
         if 401 in codes:
             logger.error(
-                "→ 401 감지: NTRIP_USER / NTRIP_PASS를 확인하세요. "
-                "(set은 창을 닫으면 사라집니다. setx로 영구 등록 가능)"
+                "→ 401 감지: config.ini의 캐스터 user / password를 확인하세요."
             )
         if 503 in codes:
             logger.error(

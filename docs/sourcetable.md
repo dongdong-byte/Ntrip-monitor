@@ -1,6 +1,6 @@
 # Sourcetable 조사 결과: mounts.txt 수동 관리를 그만해야 하는 이유
 
-> 상태: **조사 완료, 코드 미수정**
+> 상태: **B단계 반영 (Sourcetable 우선, 완전 수신 확인, 보조 목록 자동 갱신)**
 > 조사일: 2026-11-25
 > 관련 문서: [ini.md](ini.md)
 
@@ -9,9 +9,9 @@
 ## 1. 결론 요약
 
 - gnssdata 캐스터는 **Sourcetable을 정상적으로 준다.** 계정 없이 요청해도 STR 562줄이 온다.
-- 코드 주석 "현재 캐스터는 GET / 요청에 404를 반환하므로 file을 기본값으로 사용합니다"([liveness_main.py:70](../liveness_main.py))는 **현재 기준으로 틀린 내용이다.**
-- 지금 감시 목록인 mounts.txt는 **"2026-07 접속로그 엑셀"에서 뽑은 고정 목록**이다. 그 이후에 추가한 관측소가 감시에서 빠져 있다.
-- 관측소를 추가할 때마다 사람이 목록을 손으로 고치는 방식은 누락이 생길 수밖에 없다. **Sourcetable을 주 출처로 쓰고, mounts.txt는 조회가 실패할 때만 쓰는 보조로 되돌린다.**
+- 예전 주석 "GET / 가 404라서 file이 기본값"은 틀렸다. B단계에서 지웠고, 기본 출처는 `auto`다. 404의 원인은 인증 헤더였다 (2절).
+- 예전 감시 목록 `mounts.txt`는 **"2026-07 접속로그 엑셀"에서 뽑은 고정 목록**이었다. 그 이후에 추가한 관측소가 빠져 있었다. 지금은 `mounts/gnssdata.txt`(562개)가 보조 목록이다.
+- 관측소를 추가할 때마다 사람이 목록을 손으로 고치는 방식은 누락이 생긴다. **Sourcetable을 주 출처로 쓰고, `mounts/<캐스터명>.txt`는 조회가 실패할 때만 쓴다.**
 
 ---
 
@@ -28,10 +28,21 @@
 - 응답 헤더: `Server: NTRIP Caster 1.1`, `Content-Type: text/plain`, `Content-Length: 64937`
 - chunked가 아니라 Content-Length 방식이라 현재 `sourcetable.py`의 파싱 방식으로 문제없이 읽을 수 있다.
 
-### 미검증 항목
+### 인증 헤더를 붙이면 404 (B단계에서 확인, 2026-11-25)
 
-- 실제 코드는 계정이 설정돼 있으면 `Authorization: Basic ...` 헤더를 붙여 Sourcetable을 요청한다. **계정을 넣은 상태의 요청은 테스트하지 못했다.** 예전에 404를 받았던 원인이 이쪽일 가능성은 남아 있다.
-- 확인 방법: `config.ini`에 gnssdata 계정을 넣은 상태에서 `--source caster`로 1회 실행한 뒤, 로그의 `sourcetable 조회` 줄을 확인한다. ini 도입 작업의 첫 검증 단계로 진행한다.
+- 예전 코드는 계정이 설정돼 있으면 `Authorization: Basic ...` 헤더를 붙여 Sourcetable을 요청했다.
+- gnssdata는 **Authorization 헤더가 붙으면 계정이 맞든 틀리든 `GET /`에 `HTTP/1.1 404 Not Found`를 돌려준다.** v1, v2, 가짜 마운트 요청 모두 같았다.
+
+  | 요청 (`GET /`, v2) | 응답 |
+  |---|---|
+  | 인증 헤더 없음 | `HTTP/1.1 200 OK`, STR 562줄 |
+  | 실제 계정 | `HTTP/1.1 404 Not Found` |
+  | 가짜 계정 `a:b` | `HTTP/1.1 404 Not Found` |
+  | 빈 계정 `:` | `HTTP/1.1 404 Not Found` |
+
+- **예전 코드 주석의 "GET /에 404"는 이 동작 때문이었다.** 캐스터가 Sourcetable을 안 주는 게 아니라, 요청 방식의 문제였다.
+- 조치: `ntrip/sourcetable.py`가 **인증 없이 먼저 요청**하고, 모두 실패할 때만 인증을 붙여 다시 시도한다. 인증이 있어야 목록을 주는 캐스터에도 대응하기 위해서다.
+- 마운트 접속 검사(`GET /마운트명`)에는 지금처럼 인증을 붙인다.
 - 완전 수신 판단 근거도 확인했다: 응답 끝이 `ENDSOURCETABLE` 줄로 끝나고, `Content-Length` 헤더가 있다. 캐시 저장 시 이 두 가지로 완전 수신을 판단한다 ([ini.md](ini.md) 7절 8번).
 
 ---
@@ -163,4 +174,4 @@ YEJU-RTCM30   YNDK-RTCM30   YNIN-RTCM30   YNJU_RTCM30
 - [ ] 캐스터에 없는 5개(`GOES-RTCM30` 등)를 mounts.txt에서 정리할지. Sourcetable로 전환하면 자동으로 빠진다.
 - [ ] `YNJU_RTCM30` 명명 오류를 캐스터 관리 쪽에 알릴지
 - [x] 메타데이터는 캐스터별 JSON. 한글명 등록은 서두르지 않음 (GGEO 등 7개 포함)
-- [ ] 계정을 넣은 상태에서 Sourcetable 요청 재확인 (2절의 미검증 항목)
+- [x] 계정을 넣은 상태에서 Sourcetable 요청 재확인: 인증 헤더가 있으면 404. 인증 없이 먼저 요청하도록 수정 (2절)

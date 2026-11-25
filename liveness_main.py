@@ -14,6 +14,9 @@
   python liveness_main.py --loop 3600
     → 1시간 간격으로 반복 검사
 
+  python liveness_main.py --list-mounts
+    → 마운트 목록만 확인 (검사·엑셀 저장·메일 없음)
+
 프로토콜 요청 변형:
   --protocol v2      → NTRIP 2.0 정식 요청 (HTTP/1.1 + Ntrip-Version) — 권장
   --protocol v1      → NTRIP 1.0 관행 요청 (HTTP/1.0)
@@ -24,17 +27,14 @@
   --protocol all     → v1 / v2 / client 셋 다 검사해 비교 (접속 3배, 진단용)
 
 마운트 목록 출처:
-  --source file    → mounts.txt만 사용 (기본값)
-  --source auto    → Sourcetable 조회 성공 시 사용, 실패하면 mounts.txt
+  --source auto    → Sourcetable 조회 성공 시 사용, 실패하면 보조 목록 (기본값)
+                     완전 수신한 Sourcetable은 보조 목록(mounts/<캐스터명>.txt)에 저장
   --source caster  → Sourcetable만 사용하고 실패하면 종료
+  --source file    → 보조 목록만 사용 (진단용)
 
 계정:
-  환경변수 NTRIP_USER / NTRIP_PASS 사용 권장
-
-Windows CMD 예시:
-  set NTRIP_USER=사용자계정
-  set NTRIP_PASS=비밀번호
-  python liveness_main.py
+  config.ini의 [caster:이름] 섹션에서 읽는다. (config.example.ini 참고)
+  설정 점검: python config_loader.py
 """
 
 import json
@@ -46,20 +46,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import mount_cache
+from config_loader import CasterConfig, ConfigError, load_config
 from liveness_checker import NtripLivenessChecker
 from liveness_excel_writer import LivenessExcelWriter
 from liveness_mailer import LivenessMailer
+from mount_cache import clean_mount_name
 
 
 BASE_DIR = Path(__file__).resolve().parent
 
 LIVENESS_CONFIG = {
-    "CASTER_HOST": "www.gnssdata.or.kr",
-    "CASTER_PORT": 2101,
-
-    # 환경변수 NTRIP_USER / NTRIP_PASS 사용을 권장합니다.
-    "USERNAME": "",
-    "PASSWORD": "",
+    # 캐스터 주소와 계정은 config.ini에서 읽는다.
 
     "CONNECT_TIMEOUT": 10.0,
     "DATA_TIMEOUT": 10.0,
@@ -67,9 +65,10 @@ LIVENESS_CONFIG = {
     # 운영 캐스터 부하를 고려해 처음에는 낮게 시작합니다.
     "MAX_WORKERS": 15,
 
-    # 현재 캐스터는 GET / 요청에 404를 반환하므로 file을 기본값으로 사용합니다.
-    # file / auto / caster 중 하나
-    "MOUNT_SOURCE": "file",
+    # 마운트 목록 출처: auto / caster / file
+    # auto: Sourcetable 우선, 실패하면 보조 목록(mounts/<캐스터명>.txt)
+    # (예전 주석의 "GET /에 404"는 2026-11-25 확인 결과 사실이 아님. docs/sourcetable.md)
+    "MOUNT_SOURCE": "auto",
 
     # NTRIP 요청 변형 (v1 / v2 / client / auto / both / all)
     #   v2     : NTRIP 2.0 정식 요청 (캐스터 2.0 지원 확인됨 → 기본값)
@@ -80,7 +79,8 @@ LIVENESS_CONFIG = {
     #   all    : v1 / v2 / client 비교 (접속 3배)
     "PROTOCOL_MODE": "v2",
 
-    "MOUNTS_FILE": str(BASE_DIR / "mounts.txt"),
+    # 캐스터별 보조 마운트 목록 폴더: mounts/<캐스터명>.txt
+    "MOUNTS_DIR": str(BASE_DIR / "mounts"),
     "STATION_METADATA_FILE": str(BASE_DIR / "station_metadata.json"),
     "OUTPUT_DIR": str(BASE_DIR / "output"),
     "OUTPUT_FILE": "마운트포인트_생존현황.xlsx",
@@ -116,22 +116,15 @@ def setup_logging() -> None:
     )
 
 
-def build_checker(protocol_mode: Optional[str] = None) -> NtripLivenessChecker:
-    """환경변수를 우선 사용해 NTRIP 검사기를 생성합니다."""
-    username = os.environ.get("NTRIP_USER", LIVENESS_CONFIG["USERNAME"]).strip()
-    password = os.environ.get("NTRIP_PASS", LIVENESS_CONFIG["PASSWORD"])
-
-    if not username:
-        logger.warning(
-            "NTRIP_USER가 설정되지 않았습니다. "
-            "인증이 필요한 마운트는 오류가 발생할 수 있습니다."
-        )
-
+def build_checker(
+    caster: CasterConfig, protocol_mode: Optional[str] = None
+) -> NtripLivenessChecker:
+    """config.ini의 캐스터 설정으로 NTRIP 검사기를 생성합니다."""
     return NtripLivenessChecker(
-        host=LIVENESS_CONFIG["CASTER_HOST"],
-        port=LIVENESS_CONFIG["CASTER_PORT"],
-        username=username,
-        password=password,
+        host=caster.host,
+        port=caster.port,
+        username=caster.user,
+        password=caster.password,
         connect_timeout=LIVENESS_CONFIG["CONNECT_TIMEOUT"],
         data_timeout=LIVENESS_CONFIG["DATA_TIMEOUT"],
         max_workers=LIVENESS_CONFIG["MAX_WORKERS"],
@@ -207,68 +200,18 @@ def load_station_metadata(path: str) -> dict:
     return metadata
 
 
-def clean_mount_name(value: str) -> str:
-    """요청용 정리: 앞뒤 공백/선행 슬래시만 제거. 대소문자는 원본 유지.
-
-    NTRIP 마운트명은 대소문자를 구분하므로, 캐스터 요청에 쓰이는 이름은
-    절대 변형하지 않는다. (대문자 비교는 filter_mounts 내부에서만 수행)
-    """
-    return value.strip().lstrip("/")
-
-
-def load_mounts_from_file(path: str) -> list:
-    """mounts.txt에서 마운트 목록을 읽습니다.
-
-    파일 형식:
-      - 한 줄에 마운트 하나
-      - 빈 줄 무시
-      - #으로 시작하는 줄 무시
-      - 중복 제거
-    """
-    file_path = Path(path)
-
-    if not file_path.exists():
-        logger.warning(f"마운트 목록 파일이 없습니다: {file_path}")
-        return []
-
-    mounts = set()
-
-    try:
-        with file_path.open("r", encoding="utf-8-sig") as file:
-            for line_number, line in enumerate(file, start=1):
-                value = line.strip()
-
-                if not value or value.startswith("#"):
-                    continue
-
-                mount = clean_mount_name(value)
-
-                if not mount:
-                    logger.warning(
-                        f"빈 마운트명 무시: {file_path.name}:{line_number}"
-                    )
-                    continue
-
-                mounts.add(mount)
-
-    except OSError as exc:
-        logger.error(f"마운트 목록 파일 읽기 실패: {exc}")
-        return []
-
-    result = sorted(mounts)
-    logger.info(f"{file_path.name}에서 마운트 {len(result)}개 로드")
-    return result
-
-
 def resolve_mounts(
     checker: NtripLivenessChecker,
+    caster_name: str,
     source: Optional[str] = None,
 ) -> list:
     """설정된 출처에 따라 검사할 마운트 목록을 결정합니다.
 
-    file:   mounts.txt만 사용
-    auto:   Sourcetable을 먼저 조회하고 실패하면 mounts.txt 사용
+    auto:   Sourcetable을 먼저 조회하고 실패하면 보조 목록 사용 (기본값)
     caster: Sourcetable만 사용
+    file:   보조 목록만 사용 (진단용)
+
+    Sourcetable을 완전히 수신하면 보조 목록(mounts/<캐스터명>.txt)을 갱신합니다.
     """
     selected_source = (source or LIVENESS_CONFIG["MOUNT_SOURCE"]).strip().lower()
 
@@ -279,18 +222,19 @@ def resolve_mounts(
         )
         return []
 
-    mounts_file = LIVENESS_CONFIG["MOUNTS_FILE"]
+    cache_file = mount_cache.cache_path(LIVENESS_CONFIG["MOUNTS_DIR"], caster_name)
 
     if selected_source == "file":
-        logger.info("마운트 목록 출처: mounts.txt")
-        mounts = load_mounts_from_file(mounts_file)
+        logger.info(f"[{caster_name}] 마운트 목록 출처: 보조 목록 {cache_file.name}")
+        mounts = mount_cache.read_mounts(cache_file)
 
         if not mounts:
-            logger.error("mounts.txt에서 검사할 마운트를 확보하지 못했습니다.")
+            logger.error(f"[{caster_name}] 보조 목록에서 검사할 마운트를 확보하지 못했습니다.")
 
         return mounts
 
-    logger.info("마운트 목록 출처: Sourcetable 조회")
+    logger.info(f"[{caster_name}] 마운트 목록 출처: Sourcetable 조회")
+    # fetch_mountpoints는 완전 수신이 확인된 목록만 돌려준다. (ntrip/sourcetable.py)
     caster_mounts = checker.fetch_mountpoints()
 
     if caster_mounts:
@@ -300,21 +244,27 @@ def resolve_mounts(
             for mount in caster_mounts
             if clean_mount_name(mount)
         })
-        logger.info(f"Sourcetable 마운트 {len(mounts)}개 사용")
+        logger.info(f"[{caster_name}] Sourcetable 마운트 {len(mounts)}개 사용")
+        mount_cache.write_mounts(
+            cache_file, mounts, source=f"{checker.host}:{checker.port}"
+        )
         return mounts
 
     if selected_source == "caster":
         logger.error(
-            "Sourcetable 조회에 실패했고 --source caster가 지정되어 종료합니다."
+            f"[{caster_name}] Sourcetable 조회에 실패했고 "
+            "--source caster가 지정되어 종료합니다."
         )
         return []
 
-    logger.warning("Sourcetable 조회 실패 → mounts.txt로 폴백합니다.")
-    file_mounts = load_mounts_from_file(mounts_file)
+    logger.warning(
+        f"[{caster_name}] Sourcetable 조회 실패 → 보조 목록 {cache_file.name}로 검사합니다."
+    )
+    file_mounts = mount_cache.read_mounts(cache_file)
 
     if not file_mounts:
         logger.error(
-            "Sourcetable과 mounts.txt 모두에서 "
+            f"[{caster_name}] Sourcetable과 보조 목록 모두에서 "
             "검사할 마운트를 확보하지 못했습니다."
         )
 
@@ -364,12 +314,13 @@ def filter_mounts(
 def run_once(
     checker: NtripLivenessChecker,
     writer: LivenessExcelWriter,
+    caster_name: str,
     station_filter: Optional[list] = None,
     mount_source: Optional[str] = None,
     send_mail: bool = False,
 ) -> bool:
     """마운트 목록 결정 → 필터 → 생존 검사 → 엑셀 저장을 1회 수행합니다."""
-    mounts = resolve_mounts(checker, mount_source)
+    mounts = resolve_mounts(checker, caster_name, mount_source)
 
     if not mounts:
         return False
@@ -403,11 +354,12 @@ def run_once(
 
 
 def parse_arguments(args: list) -> tuple:
-    """--loop, --source, --protocol, --mail 옵션과 필터 인수를 분리합니다."""
+    """--loop, --source, --protocol, --mail, --list-mounts 옵션과 필터 인수를 분리합니다."""
     loop_interval = None
     mount_source = None
     protocol_mode = None
     send_mail = False
+    list_only = False
     filters = []
 
     index = 0
@@ -417,6 +369,11 @@ def parse_arguments(args: list) -> tuple:
 
         if arg == "--mail":
             send_mail = True
+            index += 1
+            continue
+
+        if arg == "--list-mounts":
+            list_only = True
             index += 1
             continue
 
@@ -472,7 +429,7 @@ def parse_arguments(args: list) -> tuple:
         filters.append(arg)
         index += 1
 
-    return loop_interval, mount_source, protocol_mode, send_mail, filters
+    return loop_interval, mount_source, protocol_mode, send_mail, list_only, filters
 
 
 def main() -> None:
@@ -484,13 +441,39 @@ def main() -> None:
             mount_source,
             protocol_mode,
             send_mail,
+            list_only,
             station_filter,
         ) = parse_arguments(sys.argv[1:])
     except ValueError as exc:
         logger.error(str(exc))
+        raise SystemExit(1)
+
+    try:
+        config = load_config()
+    except ConfigError as exc:
+        logger.error(str(exc))
+        raise SystemExit(1)
+
+    # 여러 캐스터를 차례로 검사하는 구조는 D단계에서 만든다.
+    # 그 전까지는 config.ini의 첫 번째 캐스터만 검사한다.
+    caster = config.casters[0]
+    if len(config.casters) > 1:
+        skipped = ", ".join(c.name for c in config.casters[1:])
+        logger.warning(
+            f"현재는 첫 번째 캐스터({caster.name})만 검사합니다. 건너뜀: {skipped}"
+        )
+
+    checker = build_checker(caster, protocol_mode)
+
+    if list_only:
+        # 마운트 목록만 확인한다. 검사·엑셀 저장·메일은 하지 않는다.
+        mounts = resolve_mounts(checker, caster.name, mount_source)
+        mounts = filter_mounts(mounts, station_filter or None) if mounts else mounts
+        logger.info(f"[{caster.name}] 마운트 목록 확인 완료: {len(mounts)}개")
+        if not mounts:
+            raise SystemExit(1)
         return
 
-    checker = build_checker(protocol_mode)
     station_metadata = load_station_metadata(
         LIVENESS_CONFIG["STATION_METADATA_FILE"]
     )
@@ -501,14 +484,20 @@ def main() -> None:
     )
 
     if loop_interval is None:
-        run_once(checker, writer, station_filter or None, mount_source, send_mail)
+        run_once(
+            checker, writer, caster.name,
+            station_filter or None, mount_source, send_mail,
+        )
         return
 
     logger.info(f"반복 모드: {loop_interval}초 간격 (Ctrl+C로 종료)")
 
     try:
         while True:
-            run_once(checker, writer, station_filter or None, mount_source, send_mail)
+            run_once(
+                checker, writer, caster.name,
+                station_filter or None, mount_source, send_mail,
+            )
             logger.info(f"{loop_interval}초 대기...")
             time.sleep(loop_interval)
 
