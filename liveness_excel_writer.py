@@ -31,6 +31,8 @@ import re
 from collections import defaultdict
 from typing import Optional
 
+from metadata_store import station_code as identify_station_code
+
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
@@ -180,7 +182,7 @@ class LivenessExcelWriter:
 
         if missing_codes:
             preview = ", ".join(sorted(missing_codes)[:10])
-            logger.warning(
+            logger.debug(
                 f"관측소 메타데이터 미확인 코드 {len(missing_codes)}개: {preview}"
             )
 
@@ -493,14 +495,14 @@ class LivenessExcelWriter:
 
         if missing_codes:
             preview = ", ".join(sorted(missing_codes)[:10])
-            logger.warning(
+            logger.debug(
                 f"[{ws.title}] 관측소 메타데이터 미확인 코드 "
                 f"{len(missing_codes)}개: {preview}"
             )
 
     @staticmethod
     def _station_code_from_mount(mount: str) -> str:
-        return mount.split("-", 1)[0].strip().upper()
+        return identify_station_code(mount) or ""
 
     @staticmethod
     def _mount_type_from_mount(mount: str) -> str:
@@ -537,8 +539,6 @@ class LivenessExcelWriter:
             result = results[mount]
             station_code = self._station_code_from_mount(mount)
             metadata = self.station_metadata.get(station_code, {})
-            agency = metadata.get("agency", UNKNOWN_AGENCY)
-            station_name = metadata.get("station_name", "")
 
             if mount in existing:
                 row = existing[mount]
@@ -546,6 +546,16 @@ class LivenessExcelWriter:
                 row = next_row
                 existing[mount] = row
                 next_row += 1
+
+            # JSON에 값이 없으면 기존 엑셀 칸을 유지한다.
+            # 빈 항목은 load()에서 빠지므로, 없는 키를 빈칸으로 덮어쓰지 않는다.
+            agency = metadata.get(
+                "agency",
+                ws.cell(row=row, column=COL_AGENCY).value or UNKNOWN_AGENCY,
+            )
+            station_name = metadata.get(
+                "station_name", ws.cell(row=row, column=COL_STATION_NAME).value or ""
+            )
 
             self._write_cell(ws, row, COL_AGENCY, agency)
             self._write_cell(ws, row, COL_STATION_NAME, station_name)

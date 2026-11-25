@@ -200,7 +200,7 @@ support@valuespace.info 메일함
 
 | 캐스터 섹션 | 파일 | 비고 |
 |---|---|---|
-| `[caster:gnssdata]` | `metadata/gnssdata.json` | 지금 루트의 `station_metadata.json`(147개)을 구현 시 이 경로로 옮긴다 |
+| `[caster:gnssdata]` | `metadata/gnssdata.json` | 루트의 `station_metadata.json`(147개)을 C단계에서 이 경로로 옮겼다 |
 | `[caster:seoul]` | `metadata/seoul.json` | 처음에는 빈 객체 `{}`. 검사 때 코드만 빈 항목으로 쌓인다 |
 | `[caster:nmpnt]` | `metadata/nmpnt.json` | 서울과 같다 |
 
@@ -219,7 +219,13 @@ ini에는 경로를 넣지 않는다. 섹션 이름의 캐스터명으로 경로
 
 **관측소 코드 식별:** 현재는 하이픈 앞을 코드로 사용하지만, `YNJU_RTCM30`처럼 밑줄을 쓰는 이름도 있다. 확인된 명명 규칙으로 식별 가능한 코드만 연결하고, 불명확한 이름은 임의로 잘라 JSON에 추가하지 않는다. 이런 항목도 원래 마운트명으로 검사·기록하며 한글명은 비워 둔다. 서버에 요청하는 마운트명 자체는 변경하지 않는다.
 
-현재 gnssdata 파일 상태: 관측소 147개, 소속기관 5곳 등록. GGEO, HSDO, JINJ, YECH, SGWI, GOJE, JJHG 7개가 미등록이다. 이 7개도 한글을 지금 채울 필요는 없다. 구현 때 빈 항목으로 추가되면 된다.
+현재 gnssdata 파일 상태 (C단계 첫 실행 후, 2026-11-25): 전체 175개 = 한글 정보가 있는 147개 + 빈 항목 28개.
+
+- 처음에는 GGEO 등 7개만 미등록으로 알고 있었으나, Sourcetable 전체(562개 마운트)와 비교하니 **28개**였다.
+- 자동 추가된 빈 항목: ANSG, CHNY, GANR, GEJE, GGEO, GOJE, GUNW, HPCN, HSDO, HWCH, IMSL, JINJ, JJHG, JNDO, MJOO, NAJU, POCH, SBAO, SCHN, SGUI, SGWI, TEAN, ULSN, WLJN, YECH, YEJU, YNDK, YNIN
+- `YNJU_RTCM30`은 명명 규칙(`코드-형식`)에 맞지 않아 추가하지 않았다.
+- 한글을 지금 채울 필요는 없다. 필요할 때 빈칸만 채우면 다음 실행부터 엑셀에 반영된다.
+- 빈 항목은 엑셀에 넘기지 않는다. 그래서 엑셀에 이미 적혀 있던 관측소명·기관을 빈칸으로 덮어쓰지 않는다.
 
 ---
 
@@ -232,7 +238,7 @@ ini에는 경로를 넣지 않는다. 섹션 이름의 캐스터명으로 경로
 | ③ | **캐스터 반복 실행.** 캐스터마다 checker와 writer를 생성한다. 엑셀은 캐스터별 파일로 저장한다 | `liveness_main.py` |
 | ④ | **캐스터 단위 장애 격리.** 한 캐스터가 실패해도 나머지는 계속 검사하고, 실패 사실을 메일에 포함한다 | `liveness_main.py` |
 | ⑤ | **메일 1통 통합.** 캐스터별 검사 결과와 검사·저장 실패를 표시한다. 한글명 미매칭은 빈칸으로 두며 별도 경고하지 않는다. 검사 결과를 엑셀 저장 성공 여부와 별도로 보존한다 | `liveness_main.py`, `liveness_mailer.py` |
-| ⑥ | **메타데이터 반자동 동기화.** 캐스터별 `metadata/<캐스터명>.json`. 기존 `station_metadata.json`은 `metadata/gnssdata.json`으로 이동 | `liveness_main.py` 또는 신규 모듈 |
+| ⑥ | **메타데이터 반자동 동기화.** 캐스터별 `metadata/<캐스터명>.json`. 기존 `station_metadata.json`은 `metadata/gnssdata.json`으로 이동 (C단계 완료) | `liveness_main.py`, `metadata_store.py` (신규) |
 | ⑦ | **Sourcetable 결과 캐시.** 정상 응답의 완전한 수신과 파싱 성공을 확인한 경우에만 `mounts/<캐스터명>.txt`를 갱신한다. 조회 실패·불완전 응답은 기존 캐시를 유지한다. 루트의 `mounts.txt`는 `mounts/gnssdata.txt`로 옮긴다 ([sourcetable.md](sourcetable.md) 5-2절) | `liveness_main.py`, 필요 시 `ntrip/sourcetable.py` |
 | ⑧ | **CLI 옵션.** `--caster 이름`으로 특정 캐스터만 검사한다. 기존 `--protocol`, `--source`, `--mail`은 유지한다 | `liveness_main.py` |
 | ⑨ | `config.example.ini`를 추가한다 | 신규 |

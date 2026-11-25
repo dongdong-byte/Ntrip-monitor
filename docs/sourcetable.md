@@ -120,7 +120,9 @@ YEJU-RTCM30   YNDK-RTCM30   YNIN-RTCM30   YNJU_RTCM30
 
 ## 4. 관측소 메타데이터도 빠져 있음
 
-루트의 `station_metadata.json`(관측소 147개, 구현 시 `metadata/gnssdata.json`으로 이동)을 확인한 결과, 새로 추가한 관측소의 한글명과 소속기관이 **등록되어 있지 않다.**
+루트의 `station_metadata.json`(관측소 147개, C단계에서 `metadata/gnssdata.json`으로 이동)을 확인한 결과, 새로 추가한 관측소의 한글명과 소속기관이 **등록되어 있지 않다.**
+
+> C단계 결과(2026-11-25): 아래 7개는 일부였다. Sourcetable 전체와 비교하면 미등록 관측소는 **28개**였고, 모두 빈 항목으로 자동 추가되었다. 목록은 [ini.md](ini.md) 5절.
 
 | 관측소 | metadata |
 |---|---|
@@ -173,5 +175,5 @@ YEJU-RTCM30   YNDK-RTCM30   YNIN-RTCM30   YNJU_RTCM30
 - [ ] Sourcetable의 562개를 전부 감시할지, 제외할 항목이 있는지 (`RTK` 형식 10개, 인증 `N` 32개 등)
 - [ ] 캐스터에 없는 5개(`GOES-RTCM30` 등)를 mounts.txt에서 정리할지. Sourcetable로 전환하면 자동으로 빠진다.
 - [ ] `YNJU_RTCM30` 명명 오류를 캐스터 관리 쪽에 알릴지
-- [x] 메타데이터는 캐스터별 JSON. 한글명 등록은 서두르지 않음 (GGEO 등 7개 포함)
+- [x] 메타데이터는 캐스터별 JSON. 한글명 등록은 서두르지 않음 (GGEO 등 28개, C단계에서 빈 항목으로 자동 추가됨)
 - [x] 계정을 넣은 상태에서 Sourcetable 요청 재확인: 인증 헤더가 있으면 404. 인증 없이 먼저 요청하도록 수정 (2절)

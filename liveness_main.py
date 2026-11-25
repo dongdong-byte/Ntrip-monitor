@@ -37,7 +37,6 @@
   설정 점검: python config_loader.py
 """
 
-import json
 import logging
 import os
 import sys
@@ -46,6 +45,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+import metadata_store
 import mount_cache
 from config_loader import CasterConfig, ConfigError, load_config
 from liveness_checker import NtripLivenessChecker
@@ -81,7 +81,8 @@ LIVENESS_CONFIG = {
 
     # 캐스터별 보조 마운트 목록 폴더: mounts/<캐스터명>.txt
     "MOUNTS_DIR": str(BASE_DIR / "mounts"),
-    "STATION_METADATA_FILE": str(BASE_DIR / "station_metadata.json"),
+    # 캐스터별 관측소 메타데이터 폴더: metadata/<캐스터명>.json
+    "METADATA_DIR": str(BASE_DIR / "metadata"),
     "OUTPUT_DIR": str(BASE_DIR / "output"),
     "OUTPUT_FILE": "마운트포인트_생존현황.xlsx",
 
@@ -165,39 +166,14 @@ def build_mailer() -> Optional[LivenessMailer]:
     )
 
 
-def load_station_metadata(path: str) -> dict:
-    """관측소 코드별 한글명과 소속기관 정보를 JSON에서 읽습니다."""
-    metadata_path = Path(path)
+def sync_station_metadata(caster_name: str, mounts: list) -> dict:
+    """미등록 관측소를 빈 항목으로 추가한 뒤, writer용 메타데이터를 읽습니다.
 
-    if not metadata_path.exists():
-        logger.warning(f"관측소 메타데이터 파일이 없습니다: {metadata_path}")
-        return {}
-
-    try:
-        with metadata_path.open("r", encoding="utf-8-sig") as file:
-            raw = json.load(file)
-    except (OSError, json.JSONDecodeError) as exc:
-        logger.error(f"관측소 메타데이터 파일 읽기 실패: {exc}")
-        return {}
-
-    metadata = {}
-    for code, value in raw.items():
-        if not isinstance(value, dict):
-            continue
-
-        normalized_code = str(code).strip().upper()
-        if not normalized_code:
-            continue
-
-        metadata[normalized_code] = {
-            "station_name": str(value.get("station_name", "")).strip(),
-            "agency": str(value.get("agency", "")).strip(),
-        }
-
-    logger.info(
-        f"{metadata_path.name}에서 관측소 메타데이터 {len(metadata)}개 로드"
-    )
-    return metadata
+    필터 적용 전의 전체 마운트 목록을 넘겨야 미등록 관측소를 빠짐없이 찾습니다.
+    """
+    path = metadata_store.metadata_path(LIVENESS_CONFIG["METADATA_DIR"], caster_name)
+    metadata_store.add_missing(path, mounts)
+    return metadata_store.load(path)
 
 
 def resolve_mounts(
@@ -324,6 +300,8 @@ def run_once(
 
     if not mounts:
         return False
+
+    writer.station_metadata = sync_station_metadata(caster_name, mounts)
 
     mounts = filter_mounts(mounts, station_filter)
 
@@ -468,19 +446,18 @@ def main() -> None:
     if list_only:
         # 마운트 목록만 확인한다. 검사·엑셀 저장·메일은 하지 않는다.
         mounts = resolve_mounts(checker, caster.name, mount_source)
+        if mounts:
+            sync_station_metadata(caster.name, mounts)
         mounts = filter_mounts(mounts, station_filter or None) if mounts else mounts
         logger.info(f"[{caster.name}] 마운트 목록 확인 완료: {len(mounts)}개")
         if not mounts:
             raise SystemExit(1)
         return
 
-    station_metadata = load_station_metadata(
-        LIVENESS_CONFIG["STATION_METADATA_FILE"]
-    )
+    # 관측소 메타데이터는 run_once에서 마운트 목록을 확정한 뒤 동기화해 넣는다.
     writer = LivenessExcelWriter(
         LIVENESS_CONFIG["OUTPUT_DIR"],
         LIVENESS_CONFIG["OUTPUT_FILE"],
-        station_metadata=station_metadata,
     )
 
     if loop_interval is None:

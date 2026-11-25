@@ -586,5 +586,117 @@
   "YYAN": {
     "station_name": "양양",
     "agency": "국토지리정보원"
+  },
+  "ANSG": {
+    "station_name": "",
+    "agency": ""
+  },
+  "CHNY": {
+    "station_name": "",
+    "agency": ""
+  },
+  "GANR": {
+    "station_name": "",
+    "agency": ""
+  },
+  "GEJE": {
+    "station_name": "",
+    "agency": ""
+  },
+  "GGEO": {
+    "station_name": "",
+    "agency": ""
+  },
+  "GOJE": {
+    "station_name": "",
+    "agency": ""
+  },
+  "GUNW": {
+    "station_name": "",
+    "agency": ""
+  },
+  "HPCN": {
+    "station_name": "",
+    "agency": ""
+  },
+  "HSDO": {
+    "station_name": "",
+    "agency": ""
+  },
+  "HWCH": {
+    "station_name": "",
+    "agency": ""
+  },
+  "IMSL": {
+    "station_name": "",
+    "agency": ""
+  },
+  "JINJ": {
+    "station_name": "",
+    "agency": ""
+  },
+  "JJHG": {
+    "station_name": "",
+    "agency": ""
+  },
+  "JNDO": {
+    "station_name": "",
+    "agency": ""
+  },
+  "MJOO": {
+    "station_name": "",
+    "agency": ""
+  },
+  "NAJU": {
+    "station_name": "",
+    "agency": ""
+  },
+  "POCH": {
+    "station_name": "",
+    "agency": ""
+  },
+  "SBAO": {
+    "station_name": "",
+    "agency": ""
+  },
+  "SCHN": {
+    "station_name": "",
+    "agency": ""
+  },
+  "SGUI": {
+    "station_name": "",
+    "agency": ""
+  },
+  "SGWI": {
+    "station_name": "",
+    "agency": ""
+  },
+  "TEAN": {
+    "station_name": "",
+    "agency": ""
+  },
+  "ULSN": {
+    "station_name": "",
+    "agency": ""
+  },
+  "WLJN": {
+    "station_name": "",
+    "agency": ""
+  },
+  "YECH": {
+    "station_name": "",
+    "agency": ""
+  },
+  "YEJU": {
+    "station_name": "",
+    "agency": ""
+  },
+  "YNDK": {
+    "station_name": "",
+    "agency": ""
+  },
+  "YNIN": {
+    "station_name": "",
+    "agency": ""
   }
 }
